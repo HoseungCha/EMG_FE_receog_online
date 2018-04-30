@@ -103,7 +103,7 @@ if handles.radiobutton_test.Value
     
     % if it is test session, get information of experiment 
     [FileName,PathName,~] = uigetfile({'*.mat'},...
-    'mytitle',fullfile(path.code,'model'));
+    'mytitle',fullfile(path.code,'DB','DB_online'));
     if FileName==0
         fprintf('you must choose model in training session');
         return;

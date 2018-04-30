@@ -62,21 +62,24 @@ try
 
         % datasize
         if cq.output.datasize == cq.output.length
-            
-            myStop;
             temp_pd = cq.output.getLastN(cq.output.length);
             
            % majority voting
             [~,fp] = max(countmember(1:exp_inform.n_fe,temp_pd));
+            
             % presentation of classfied facial expression
             GUI.handles.edit_classification.String = ...
                 sprintf('Classfied: %s',exp_inform.name_FE{fp});
+            
+            % display image from test result
             for i_fe=1:exp_inform.n_fe
                 GUI.h_image(i_fe).Visible='off';
             end
-            % display image from test result
             GUI.h_image(fp).Visible = 'on'; 
-            fprintf(exp_inform.PC_serial, num2str(fp));% 시리얼 명령 보내기(아바타 표정 조정)
+            
+            %------do serial communication to control avartar-------------%
+            fprintf(exp_inform.PC_serial, num2str(fp));
+            %-------------------------------------------------------------%
         end 
         % 표정을 짓는 구간에서 결과 저장
         if(GUI.id_start_fe)
@@ -87,16 +90,20 @@ try
 
            if cq.featset.length == cq.featset.datasize
                % trl 순서파악
-               temp_FE_order = circshift(exp_inform.order_fe4GUI,1);
+               % go to next facial expression instruction
+               temp_FE_order = circshift(exp_inform.order_fe4GUI,1,2); 
+               
                i_trl = find(exp_inform.order_fe==temp_FE_order(1));
                % 결과 저장 및 init
-               cq.test_result{i_trl} = cq.test_result.data;
+               DB_backup.test_result{i_trl} = cq.test_result.data;
                cq.test_result = circlequeue(exp_inform.n_win,1);%초기화
+               
                % Feat 저장 및 init
                DB_backup.FeatSet_test{i_trl} = cq.featset.data;
                cq.featset = circlequeue(exp_inform.n_win,exp_inform.n_bip_ch*3+exp_inform.n_bip_ch*4);%초기화
+               
                % when somithing error occurs
-               if isempty(cq.test_result{i_trl}) 
+               if isempty(DB_backup.test_result{i_trl}) 
                    myStop; 
                    keyboard;
                end

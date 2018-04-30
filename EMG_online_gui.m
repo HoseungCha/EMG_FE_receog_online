@@ -146,8 +146,7 @@ function pushbutton_start_Callback(hObject, eventdata, handles)
 
 global GUI
 global timer_obj
-global path;
-global exp_inform;
+
 % intializing check
 if GUI.button_init == 0
    errordlg('Initialize 버튼을 눌러주세요');
@@ -167,8 +166,8 @@ if handles.radiobutton_train.Value
     timer_obj.onPaint.UserData = tic;
     timer_obj.inst_make_fe.UserData = tic;
     timer_obj.inst_rest.UserData = tic;
+    
     % 표정 인스트럭션 GUI 시작
-
     start(timer_obj.inst_make_fe); 
     start(timer_obj.inst_rest);
     start(timer_obj.data_acq_n_preprocessing);
@@ -184,10 +183,10 @@ if handles.radiobutton_test.Value
     timer_obj.onPaint.UserData = tic;
     timer_obj.inst_make_fe.UserData = tic;
     timer_obj.inst_rest.UserData = tic;
+    
     % 표정 인스트럭션 GUI 시작
-
-%     start(timer_obj.inst_make_fe); 
-%     start(timer_obj.inst_rest);
+    start(timer_obj.inst_make_fe); 
+    start(timer_obj.inst_rest);
     start(timer_obj.data_acq_n_preprocessing);
     start(timer_obj.onPaint);
 end

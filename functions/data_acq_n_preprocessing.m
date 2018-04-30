@@ -15,7 +15,7 @@ global bdf;
 global cq
 global timer_obj;
 
-timeStart = toc(timer_obj.data_acq_n_preprocessing.UserData)
+% timeStart = toc(timer_obj.data_acq_n_preprocessing.UserData)
 
 try
     %data input

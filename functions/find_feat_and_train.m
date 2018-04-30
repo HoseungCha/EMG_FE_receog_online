@@ -126,7 +126,8 @@ elapsedTime = toc(timerVal);
 fprintf('Elapsed Time is %0.2f s\n', elapsedTime)
 
 %-----------------------------save model and DB---------------------------%
-uisave({'model','DB_backup','exp_inform'},fullfile(path.code,'model',datestr(now,'yymmdd_')));
+uisave({'model','DB_backup','exp_inform'},fullfile(path.code,'DB','DB_online',...
+    datestr(now,'yymmdd_tr_')))
 
 % get rid of useless feat
 DB_backup = rmfield(DB_backup,'FeatSet');
