@@ -105,8 +105,7 @@ if handles.radiobutton_test.Value
     [FileName,PathName,~] = uigetfile({'*.mat'},...
     'mytitle',fullfile(path.code,'DB','DB_online'));
     if FileName==0
-        fprintf('you must choose model in training session');
-        return;
+        error('you must choose model in training session');
     end
     
     % get path of the training set that we are using now
