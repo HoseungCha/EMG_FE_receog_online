@@ -238,8 +238,9 @@ function pushbutton_open_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 global GUI
 global bdf
+global path
 %--------------------temp code for load bdf------------------------------_%
-[FileName,PathName,~] = uigetfile(['.','\*.bdf']);
+[FileName,PathName,~] = uigetfile(fullfile(path.code,'DB','DB_online','\*.bdf'));
 if FileName==0
     return;
 end
