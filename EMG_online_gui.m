@@ -31,7 +31,7 @@ function varargout = EMG_online_gui(varargin)
 
 % Edit the above text to modify the response to help EMG_online_gui
 
-% Last Modified by GUIDE v2.5 21-Sep-2017 16:44:31
+% Last Modified by GUIDE v2.5 17-May-2018 10:41:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -60,6 +60,7 @@ function EMG_online_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % varargin   command line arguments to EMG_online_gui (see VARARGIN)
+clear global;
 
 global GUI;
 global path
@@ -76,10 +77,6 @@ path.research = fileparts(fileparts(fileparts(fullfile(cd))));
 
 % path of code, which 
 path.code = fileparts(fullfile(cd));
-% path.DB = fullfile(path.code,'DB');
-% path.DB_raw = fullfile(path.DB,'DB_raw');
-% path.DB_process = fullfile(path.DB,');
-% path.DB_analy = fullfile(path.DB_process,name_DB_analy);
 
 %-------------------------------------------------------------------------%
 
@@ -87,9 +84,8 @@ path.code = fileparts(fullfile(cd));
 addpath(fullfile(cd,'functions'));
 addpath(genpath(fullfile(path.research,'_toolbox')));
 GUI_mode_presentation(handles); % GUI presentation
-GUI.prog_mode = 1; % Defualt online mode
 GUI.button_init = 0;
-GUI.use_biosmix = 0; % identifier if we use biosemix for online analysis
+
 
 % UIWAIT makes EMG_online_gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -168,8 +164,10 @@ if handles.radiobutton_train.Value
     timer_obj.inst_rest.UserData = tic;
     
     % 표정 인스트럭션 GUI 시작
-    start(timer_obj.inst_make_fe); 
-    start(timer_obj.inst_rest);
+    if ~strfind(GUI.prog_mode,'file')
+        start(timer_obj.inst_make_fe); 
+        start(timer_obj.inst_rest);
+    end
     start(timer_obj.data_acq_n_preprocessing);
     start(timer_obj.onPaint);
 end
@@ -185,8 +183,10 @@ if handles.radiobutton_test.Value
     timer_obj.inst_rest.UserData = tic;
     
     % 표정 인스트럭션 GUI 시작
+    if ~strfind(GUI.prog_mode,'file')
     start(timer_obj.inst_make_fe); 
     start(timer_obj.inst_rest);
+    end
     start(timer_obj.data_acq_n_preprocessing);
     start(timer_obj.onPaint);
 end
@@ -236,22 +236,51 @@ function pushbutton_open_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton_open (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-global GUI
-global bdf
-global path
-%--------------------temp code for load bdf------------------------------_%
-[FileName,PathName,~] = uigetfile(fullfile(path.code,'DB','DB_online','\*.bdf'));
-if FileName==0
-    return;
-end
-filepath = [PathName,FileName];
-bdf = pop_biosig(filepath);
-temp_trg = zeros(bdf.pnts,1);
-for i = 1 : 8
-    temp_trg(bdf.event(3*(i-1)+2).latency) = 128;
-end
-bdf.trg = temp_trg;
-GUI.prog_mode = 0; % Online mode:1, file mode:0
+% global GUI
+% global File
+% global path
+% global exp_inform
+% %--------------------temp code for load bdf------------------------------_%
+% [FileName,PathName,~] = uigetfile({'*.bdf';'*.mat'},'LOAD BDF or MAT',...
+%     fullfile(path.code,'DB','DB_online'));
+% if FileName==0
+%     return;
+% end
+% 
+% % make path by information of uigetfile
+% filepath = [PathName,FileName];
+% 
+% % get file extension
+% [~,~,ext] = fileparts(FileName);
+% 
+% switch ext
+%     case '.bdf'
+%         %load bdf
+%         out = pop_biosig(filepath);
+%         
+%         % get raw data and triggers of EMG
+%         [lat_trg,idx_seq_FE] = get_trg_bdf(out.event);
+%         
+%         File.raw_data = out.data;
+%         File.lat_trg_onset  = lat_trg;
+%         File.idx_seq_FE = idx_seq_FE;
+%         
+%         % set GUI program mode
+%         GUI.prog_mode = 'file_bdf'; 
+%     case '.mat'
+%         % load mat
+%         out = load(filepath);
+%         
+%         % get paramter from mat file
+%         exp_inform = out.exp_inform;
+% 
+%         % get raw data
+%         File.raw_data = out.raw_data(1:raw_pos,:);
+%         
+%         % set GUI program mode
+%         GUI.prog_mode = 'file_mat'; 
+% end
+
 
 % --- Executes on button press in pushbutton_open.
 function radiobutton_train_Callback(hObject, eventdata, handles)
@@ -340,4 +369,27 @@ function pushbutton_exit_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 close all force;
-clear all;
+clear global;
+
+
+
+function edit_program_mode_Callback(hObject, eventdata, handles)
+% hObject    handle to edit_program_mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of edit_program_mode as text
+%        str2double(get(hObject,'String')) returns contents of edit_program_mode as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function edit_program_mode_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit_program_mode (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

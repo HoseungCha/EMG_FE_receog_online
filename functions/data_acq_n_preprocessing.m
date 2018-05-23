@@ -10,110 +10,127 @@ function data_acq_n_preprocessing(  )
 global GUI;
 global exp_inform;
 global p;
-global DB_backup
-global bdf;
+global File
 global cq
-global timer_obj;
-
+global id_emg_onset;
 % timeStart = toc(timer_obj.data_acq_n_preprocessing.UserData)
-
 try
-    %data input
-    if GUI.prog_mode ==0
-        if DB_backup.curr_pos+exp_inform.sf_of_timer-1 > size(bdf.data,2)
+switch GUI.prog_mode
+    case 'file_mat'
+        if File.curr_pos+exp_inform.sf_of_timer-1 > size(File.raw_data,1)
             myStop();
             return;
         end
-        seg = bdf.data(1:10,DB_backup.curr_pos:DB_backup.curr_pos+exp_inform.sf_of_timer-1);
-        seg = double(seg)';
-        trg_seg = bdf.trg(DB_backup.curr_pos:DB_backup.curr_pos+exp_inform.sf_of_timer-1);
-        DB_backup.curr_pos = DB_backup.curr_pos+ exp_inform.sf_of_timer;
-    elseif GUI.prog_mode ==1
-        if (GUI.use_biosmix ==1)
-            try
-                seg = biosemi_signal_recieve(exp_inform.n_ch_rawdata);
-            catch me
-                if strfind(me.message,'biosemix')
-                    errordlg('Please check you are using matlab 32bit version. and please Stop now');
-                end
-            end
-        elseif (GUI.use_biosmix ==0)
-%             if cq.TCP_buffer.datasize<exp_inform.sf_of_timer % TCP 버퍼가 아직 안쌓였으면 return 시킴
-%                 seg = cq.TCP_buffer.getLastN(cq.TCP_buffer.datasize);
-%             else
-%                 seg = cq.TCP_buffer.getLastN(exp_inform.sf_of_timer);
-%             end
-            seg = TcpIpClientMatlabV1();
-%             seg = seg(:,1:12);
-        end
-    end
-    
-    % raw data 및 표정 인스트럭션 시점 저장
-    if ~exist('seg','var')
-        return;
-    end
-    seg_size = size(seg,1);
-%     disp(seg_size);
-    if seg_size == 0
-%         myStop;
-        return;
-    end
-%     myStop;
-    DB_backup.rawdata(DB_backup.raw_pos:DB_backup.raw_pos+seg_size-1,1:exp_inform.n_ch_rawdata)...
-        = seg;
-    if(GUI.id_start_fe)        
-        DB_backup.rawdata(DB_backup.raw_pos:DB_backup.raw_pos+seg_size-1,exp_inform.n_ch_rawdata+1)...
-            = ones(seg_size,1);
-    else
-        DB_backup.rawdata(DB_backup.raw_pos:DB_backup.raw_pos+seg_size-1,exp_inform.n_ch_rawdata+1)...
-            = zeros(seg_size,1);
-    end
-    DB_backup.raw_pos = DB_backup.raw_pos + seg_size;
-    
-    % channel configuration
-%     temp_chan = cell(1,6);
-%     temp_chan{1} = seg(:,1) - seg(:,2); %Right_Temporalis
-%     temp_chan{2} = seg(:,3) - seg(:,4);%Left_Temporalis
-%     temp_chan{3} = seg(:,5) - seg(:,6);%Right_Frontalis
-%     temp_chan{4} = seg(:,7) - seg(:,8);%Left_Corrugator
-%     temp_chan{5} = seg(:,9) - seg(:,10);%Left_Zygomaticus
-%     temp_chan{6} = seg(:,11) - seg(:,12);%Right_Zygomaticus
-%     emg_bip.RZ= OUT.data(p_emg.rc_matrix(i_comb,1),:) - ...
-%                 OUT.data(p_emg.rc_matrix(i_comb,2),:);
-%             emg_bip.RF= OUT.data(4,:) - OUT.data(5,:);
-%             emg_bip.LF= OUT.data(6,:) - OUT.data(7,:);
-%             emg_bip.LZ= OUT.data(p_emg.lc_matrix(i_comb,1),:) - ...
-%                 OUT.data(p_emg.lc_matrix(i_comb,2),:);
+        myStop;
+        seg = File.raw_data(...
+            File.curr_pos:File.curr_pos+exp_inform.sf_of_timer-1,...
+            1:File.n_raw_ch-1);
         
-    temp_chan{1}= seg(:,1) - seg(:,3);%Right_Zygomaticus
-    temp_chan{2}= seg(:,4) - seg(:,5); %Right_Frontalis
-    temp_chan{3}= seg(:,6) - seg(:,7); %Left_Corrugator
-    temp_chan{4}= seg(:,10) - seg(:,8); %Right_Zygomaticus
-            
-    segs = cell2mat(temp_chan);
+        File.curr_pos = File.curr_pos+ exp_inform.sf_of_timer;
 
-    
-    % filtering notch, BPF
-    if isempty(p.f.nZn)
-        [segs,p.f.nZn] = filter(p.f.nB,p.f.nA,...
-           segs,[],1);
-    else
-        [segs,p.f.nZn] = filter(p.f.nB,p.f.nA,segs,p.f.nZn,1);
-    end    
-    if isempty(p.f.bZn)
-        [segs,p.f.bZn] = filter(p.f.bB,p.f.bA,...
-            segs,[],1);
-    else
-        [segs,p.f.bZn] = filter(p.f.bB,p.f.bA,segs,p.f.bZn,1);
-    end
-    cq.emg_procc.addArray(segs); % 그림 출력 데이터
-    
-    Process_EMG(); % EMG 신호 처리 및 분류
-catch ex
-    struct2cell(ex.stack)'
-    myStop;
-    keyboard;
+    case 'file_bdf'
+        if File.curr_pos+exp_inform.sf_of_timer-1 > size(File.raw_data,1)
+            myStop();
+            return;
+        end
+        seg = File.raw_data(...
+            File.curr_pos:File.curr_pos+exp_inform.sf_of_timer-1,...
+            1:File.n_raw_ch);
+        
+        
+        
+        % trigger signal
+        if File.curr_pos<File.lat_trg_onset(exp_inform.i_trl)...
+        &&File.lat_trg_onset(exp_inform.i_trl)<=(File.curr_pos+ exp_inform.sf_of_timer)
+            GUI.id_start_fe = 1;
+            disp(File.lat_trg_onset);
+            disp(File.lat_trg_onset(exp_inform.i_trl));
+            disp(exp_inform.i_trl);
+        end
+        if  GUI.id_start_fe ==1
+            GUI_FE_inst();
+        else
+            GUI_rest_inst();
+        end
+        File.curr_pos = File.curr_pos+ exp_inform.sf_of_timer;
+    case 'online_biosemi'
+        seg = biosemi_signal_recieve(exp_inform.n_ch_rawdata);
+
+    case 'online_biosemi_eprime'
+        seg = biosemi_signal_recieve(exp_inform.n_ch_rawdata);
 end
-% timeEnd = toc(info.timer.online_code.UserData)
+% get size of segment
+n_seg = size(seg,1);
+
+
+% check if data were collceted, if it is not, return it
+if ~exist('seg','var')
+    return;
+end
+
+if n_seg == 0
+%         myStop;
+    return;
+end
+
+% except program mode of file_mat, do save rawdata!
+if ~strcmp(GUI.prog_mode,'file_mat')
+exp_inform.raw_data(exp_inform.raw_pos:exp_inform.raw_pos+n_seg-1,1:exp_inform.n_ch_rawdata)...
+    = seg;
+if(GUI.id_start_fe)        
+    exp_inform.raw_data(exp_inform.raw_pos:exp_inform.raw_pos+n_seg-1,exp_inform.n_ch_rawdata+1)...
+        = ones(n_seg,1);
+else
+    exp_inform.raw_data(exp_inform.raw_pos:exp_inform.raw_pos+n_seg-1,exp_inform.n_ch_rawdata+1)...
+        = zeros(n_seg,1);
+end
+exp_inform.raw_pos = exp_inform.raw_pos + n_seg;
+end
+
+
+% bipolar channel configuration
+temp_chan = cell(4,1);
+
+%Right_Zygomaticus
+temp_chan{1}= seg(:,exp_inform.idx_pair_right(exp_inform.i_emg_pair,1))...
+    - seg(:,exp_inform.idx_pair_right(exp_inform.i_emg_pair,2));
+temp_chan{2}= seg(:,4) - seg(:,5); %Right_Frontalis
+temp_chan{3}= seg(:,6) - seg(:,7); %Left_Corrugator
+temp_chan{4}= seg(:,exp_inform.idx_pair_left(exp_inform.i_emg_pair,1))...
+    - seg(:,exp_inform.idx_pair_left(exp_inform.i_emg_pair,2)); %LEFT_Zygomaticus
+
+segs = cat(2,temp_chan{:});
+
+
+% filtering notch, BPF
+if isempty(p.f.nZn)
+    [segs,p.f.nZn] = filter(p.f.nB,p.f.nA,...
+       segs,[],1);
+else
+    [segs,p.f.nZn] = filter(p.f.nB,p.f.nA,segs,p.f.nZn,1);
+end    
+if isempty(p.f.bZn)
+    [segs,p.f.bZn] = filter(p.f.bB,p.f.bA,...
+        segs,[],1);
+else
+    [segs,p.f.bZn] = filter(p.f.bB,p.f.bA,segs,p.f.bZn,1);
+end
+
+% buffer for plotting
+cq.emg_procc.addArray(segs); % 그림 출력 데이터
+
+% EMG signal processing and classification
+Process_EMG(); 
+
+% buffer for emg onset
+cq.emg_onset.addArray(repmat(id_emg_onset,n_seg,1));
+
+
+
+catch ex
+disp(struct2cell(ex.stack)');
+myStop;
+keyboard;
+end
 end
 
