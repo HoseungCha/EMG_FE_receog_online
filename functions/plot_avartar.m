@@ -51,9 +51,9 @@ end
 % set up the default values
 
 if isempty(id_eyebrow),ax=gca;;end
-if isempty(id_eyebrow),id_eyebrow='neutral';end
+if isempty(id_eyebrow),id_eyebrow='neutral_e';end
 if isempty(id_zygo),id_zygo='neutral';end
-if isempty(id_lips),id_lips='neutral';end
+if isempty(id_lips),id_lips='neutral_l';end
 %-------------------------------------------------------------------------%
 
 
@@ -118,7 +118,7 @@ xq_left = (xpos_left_eyebrow-size_eyebrow_width/2):0.01:...
 xq_right = abs(fliplr(xq_left));
 
 switch id_eyebrow
-    case 'neutral' % NEUTRAL
+    case 'neutral_e' % NEUTRAL
         % left eye brow
         tmp = [xpos_left_eyebrow-size_eyebrow_width/2,...
             xpos_left_eyebrow+size_eyebrow_width/2];
@@ -198,7 +198,7 @@ ypos_lip_corner_up= -0.5;
 xq = -1*size_lip_width/2:0.01:size_lip_width/2;
 
 switch id_lips
-    case 'neutral' % NEUTRAL
+    case 'neutral_l' % NEUTRAL
     % draw lips
     plot(ax,[-1*size_lip_width/2,size_lip_width/2],[ypos_lip,ypos_lip],'k');
     

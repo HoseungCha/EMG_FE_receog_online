@@ -9,7 +9,7 @@
 %-------------------------------------------------------------------------%
 function initialize(handles)
 clc; 
-
+clear biosemix;
 %-------------------------Define globale variables------------------------%
 % clear GUItimer_obj timer_obj exp_inform path File cq p;
 
@@ -22,6 +22,10 @@ global path;
 global File;
 global cq;
 global p;
+global pred;
+global pred_corrected;
+global count;
+global non_exp_activated;
 %-------------------------------------------------------------------------%
 %============================PROGRM MODE==================================%
 % choose GUI mode file_bdf, file_mat, online_biosemi, online_biosemi_eprime
@@ -33,7 +37,7 @@ global p;
 % experiment
 
 % check program mdoe
-id_check_strinput = contains({'file_bdf','file_mat','online_biosemi','online_biosemi_eprime'},...
+id_check_strinput = ismember({'file_bdf','file_mat','online_biosemi','online_biosemi_eprime'},...
     get(handles.edit_program_mode,'String'));
 if any(id_check_strinput) && ~isempty(get(handles.edit_program_mode,'String'))
     GUI.prog_mode = get(handles.edit_program_mode,'String');
@@ -57,7 +61,7 @@ elseif strfind(GUI.prog_mode,'mat')
 end
 %--------------------temp code for load bdf------------------------------_%
 [FileName,PathName,~] = uigetfile(...
-    fullfile(path.code,'DB','DB_online',file_extension));
+    fullfile(path.code,'DB','bdf',file_extension));
 if FileName==0
     return;
 end
@@ -112,7 +116,7 @@ if handles.radiobutton_test.Value
 
 % if it is test session, get information of experiment 
 [FileName,PathName,~] = uigetfile({'*.mat'},...
-'SELECT TRAIN MAT FILE',fullfile(path.code,'DB','DB_online'));
+'SELECT TRAIN MAT FILE',fullfile(cd,'DB','mat'));
 if FileName==0
     error('YOU MUST SELECT TRAIN MAT');
 end
@@ -127,11 +131,19 @@ set(handles.edit_model_input,'String',FileName);
 load(fullfile(path.model_n_DB_from_train),'exp_inform');
 
 % save model by training set
-exp_inform.model_FE = exp_inform.model.FE;
+% exp_inform.model_FE = exp_inform.model.FE;
 exp_inform.model_FE_emotion = exp_inform.model.FE_emotion;
 
 exp_inform.exp_mode = 'test_mode';
 
+% circleque for testing
+
+
+pred = circlequeue(13,1);
+exp_inform.template_c3 = logical([1 1 1 0 0 0 0 0 0 0 0 0 1]);
+pred_corrected = circlequeue(2,1);
+count = 0;
+non_exp_activated = false;
 end
 end
 %+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
@@ -201,20 +213,26 @@ for i_cf = 1 : exp_inform.n_cf
 end
 
 
-exp_inform.name_gesture_clfr{1} = {'eye_brow_down','none','none','none','none','eye_brow_sad',...
-    'none', 'none','neutral','eye_brow_sad','eye_brow_up'};
+exp_inform.name_gesture_clfr{1} = {'eye_brow_down','neutral_e','neutral_e','neutral_e','neutral_e','eye_brow_sad',...
+    'neutral_e', 'neutral_e','neutral_e','eye_brow_sad','eye_brow_up'};
 % name_gesture_clfr{2} = {'neutral','nose_wrinkle'};
 exp_inform.name_gesture_clfr{2} = {'lip_tighten','clench','lip_corner_up_left',...
-    'lip_corner_up_right','none', 'lip_stretch_down',...
-    'lip_corner_up_both','kiss','neutral', 'none','lip_open'};
+    'lip_corner_up_right','neutral_l', 'lip_stretch_down',...
+    'lip_corner_up_both','kiss','neutral_l', 'neutral_l','lip_open'};
 
+
+exp_inform.name_emo = {'angry','clench',...
+'lip_corner_up_left','lip_corner_up_right',...
+'lip_corner_up_both','fear',...
+'happy','kiss','neutral',...
+'sad','surprised'};
 
 % get features of determined emotions that you want to classify
 exp_inform.model.FE = cell(exp_inform.n_cf,1);
-exp_inform.idx_ch_FE2classfy{1} = ...
-    [2,6,10,14,18,22,26,3,7,11,15,19,23,27];
-exp_inform.idx_ch_FE2classfy{2} = ...
-    [1,5,9,13,17,21,25,4,8,12,16,20,24,28];
+% exp_inform.idx_ch_FE2classfy{1} = ...
+%     [2,6,10,14,18,22,26,3,7,11,15,19,23,27];
+% exp_inform.idx_ch_FE2classfy{2} = ...
+%     [1,5,9,13,17,21,25,4,8,12,16,20,24,28];
 
 %-------------------------------------------------------------------------%
 
@@ -362,10 +380,21 @@ cq.output_emotion = circlequeue(exp_inform.n_win_mv,1);
 
 
 % set online buffer of ouput (classfied)
+
+% cq.output_score{1} = circlequeue(exp_inform.n_win_mv,...
+%     length(exp_inform.idx_FE2classfy{1}));
+% cq.output_score{2} = circlequeue(exp_inform.n_win_mv,...
+%     length(exp_inform.idx_FE2classfy{2}));
 cq.output_score{1} = circlequeue(exp_inform.n_win_mv,...
-    length(exp_inform.idx_FE2classfy{1}));
+    11);
 cq.output_score{2} = circlequeue(exp_inform.n_win_mv,...
-    length(exp_inform.idx_FE2classfy{2}));
+    11);
+cq.score_matrix_cq{1,1} = circlequeue(exp_inform.n_win_mv,11);
+cq.score_matrix_cq{2,1} = circlequeue(exp_inform.n_win_mv,11);
+% cq.score_matrix_cq{1,2} = circlequeue(exp_inform.n_win_mv,11);
+% cq.score_matrix_cq{2,2} = circlequeue(exp_inform.n_win_mv,11);
+% cq.score_matrix_cq{1,2} = circlequeue(exp_inform.n_win_mv,n_fe_cfy);
+% cq.score_matrix_cq{2,2} = circlequeue(exp_inform.n_win_mv,n_fe_cfy);
 
 cq.output_test{1} = circlequeue(exp_inform.n_win_mv,1);
 cq.output_test{2} = circlequeue(exp_inform.n_win_mv,1);
@@ -377,7 +406,7 @@ cq.featset = circlequeue(exp_inform.n_win,exp_inform.n_bip_ch*3+exp_inform.n_bip
 cq.test_result = circlequeue(exp_inform.n_win,1);%초기화
 
 % set emg onset
-cq.emg_onset = circlequeue(exp_inform.length_buff,exp_inform.n_bip_ch);%초기화
+% cq.emg_onset = circlequeue(exp_inform.length_buff,exp_inform.n_bip_ch);%초기화
 
 % 
 cq.emg_onset4mv = circlequeue(exp_inform.n_win_mv,exp_inform.n_bip_ch);
@@ -396,14 +425,33 @@ p.f.nZn = [];
 %-------------------------------------------------------------------------%
 
 exp_inform.i_trl=1;
+exp_inform.saving_feat = 0;
+%----------------------------UDP PORTING----------------------------------%
+% please set Hoseung's Com.: '166.104.125.53'
+% HIT 313호 VR Comp.: '192.168.0.7'
+exp_inform.udp = tcpip('166.104.125.53', 7777);
+fopen(exp_inform.udp);
+
+
 %---------------Serial communication(computer by computer)----------------%
 % you should set those parameter at the same with settings of com&port
 % in device manager
 
-%     exp_inform.PC_serial = serial('COM6'); % 장치관리자에서 serial port 확인해서 설정 (실험실 오른쪽 컴퓨터)
-%     set(exp_inform.PC_serial, 'BaudRate', 9600, 'DataBits', 8, 'StopBits', 1,...
-%         'Parity', 'none', 'FlowControl', 'none', 'TimeOut', 0.01)
-%     fopen(exp_inform.PC_serial);
+% exp_inform.PC_serial = serial('COM6'); % 장치관리자에서 serial port 확인해서 설정 (실험실 오른쪽 컴퓨터)
+% set(exp_inform.PC_serial, 'BaudRate', 9600, 'DataBits', 8, 'StopBits', 1,...
+%     'Parity', 'none', 'FlowControl', 'none', 'TimeOut', 0.01)
+% fopen(exp_inform.PC_serial);
 %-------------------------------------------------------------------------%
+
+%--------------TCP/UDP communication
+% 
+% host = '166.104.125.77'
+% port = 7777
+% 
+% t = tcpip(host,port);
+% fopen(t);
+% fprintf(t,'MIN-SOO\n')
+% fclose(t);
+%------------------------------
 
 end

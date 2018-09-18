@@ -30,4 +30,5 @@ for i_fe=1:exp_inform.n_fe
 end
 GUI.h_image(exp_inform.order_fe4GUI(exp_inform.i_trl)).Visible = 'on';
 
+exp_inform.saving_feat=1;
 end

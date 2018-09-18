@@ -7,13 +7,11 @@
 % All rights are reserved to the author and the laboratory
 % contact: hoseungcha@gmail.com
 %---------------------------------------------------------------------
-function find_feat_and_train()
-global exp_inform;
-global path;
-global File;
-global GUI;
-try
 
+%-----------임시코드-----------%
+% LOAD DB 
+load(fullfile(cd,'DB','180806_1809_train_mode_online_biosemi_'));
+%------------------------------%    
 %--------------------------experiment infromation-------------------------%
 % feature indexing when using DB of ch4 ver
 clear F_list;
@@ -44,24 +42,15 @@ feat = cat(3,feat{:});
 
 %--------------------train-less minimization algorithm--------------------%
 % load feature set from DB
-[FileName,PathName,~] = uigetfile(...
-    fullfile(path.code,'DB','DATABASE','mat'),...
-    'Please Select DATABASE');
-if FileName==0
-    return;
-end
-
-% make path by information of uigetfile
-filepath = [PathName,FileName];
-
-tmp = load(filepath);
+tmp = load(fullfile(cd,'DB','feat_seg_pair_1'));
 tmp_name = fieldnames(tmp);
 feat_DB = getfield(tmp,tmp_name{1}); %#ok<GFLD>
 feat_DB = feat_DB(1:exp_inform.n_win,:,:,:,:); % check segments
 
 if T~=0 % use DB
 timerVal = tic;
-feat_t = get_DB_prime(feat,feat_DB,F_list,T,'Seg_FE');
+feat_t = get_DB_prime(feat,feat_DB,F_list,T,N1,M,F,K,'Seg_FE');
+
 % arrange feat transformed and target
 % concatinating features with types
 % display of training time
@@ -99,15 +88,11 @@ exp_inform.feat_ref = feat;
 if isempty(File)
     File.name = '';
 end
-uisave({'File','exp_inform'},fullfile(cd,'DB','mat',...
-    [datestr(now,'yymmdd_HHMM_'),exp_inform.exp_mode,'_',GUI.prog_mode,'_',File.name,'.mat']))
+uisave({'File','exp_inform'},fullfile(cd,'DB',...
+    [datestr(now,'yymmdd_HHMM_'),exp_inform.exp_mode,'_',File.name,'.mat']))
 %-------------------------------------------------------------------------%
-catch ex
-struct2cell(ex.stack)'
-myStop;
-keyboard;
-end
-end
+
+
 
 
 

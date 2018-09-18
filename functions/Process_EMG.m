@@ -16,7 +16,7 @@ try
 
 % get elapsed time using tic toc
 % timeStart = toc(info.timer.process_emg.UserData);  %for debugging
-
+% myStop;
 % get emg segment
 curr_win =cq.emg_procc.getLastN(exp_inform.sf_of_timer);
 
@@ -31,26 +31,35 @@ temp_WL = sum(abs(diff(curr_win,2))); % WL
 temp_SampEN = SamplEN(curr_win,2); % Sample EN
 
 % feat concatinating
-temp_feat = [temp_rms,temp_WL,temp_SampEN,temp_CC];
+temp_feat = zeros(1,28);
+temp_feat(1:4) = temp_rms;
+temp_feat(5:8) = temp_WL;
+temp_feat(9:12) = temp_SampEN;
+temp_feat(13:end) = temp_CC;
+
 %=========================================================================%
 
 %=========================emg onset detection=============================%
-id_emg_onset = zeros(1,exp_inform.n_bip_ch);
-for i_ch = 1 : exp_inform.n_bip_ch
-    id_emg_onset(i_ch) = ...
-        predict(exp_inform.model.model_tree_emg_onset,temp_rms(i_ch));
-end
-cq.emg_onset4mv.add(id_emg_onset);
+% id_emg_onset = zeros(1,exp_inform.n_bip_ch);
+% for i_ch = 1 : exp_inform.n_bip_ch
+%     id_emg_onset(i_ch) = ...
+%         predict(exp_inform.model.model_tree_emg_onset,temp_rms(i_ch));
+% end
+% cq.emg_onset4mv.add(id_emg_onset);
 %=========================================================================%
-
 %=============SAVE FEATURES with insturction(or triggers)=================%
-if(GUI.id_start_fe==1)
+% exp_inform.saving_feat
+if(GUI.id_start_fe==1&&exp_inform.saving_feat==1)
     % inqueue of feature extracted during 3 s 
     cq.featset.addArray(temp_feat);
 
     if cq.featset.datasize == cq.featset.length  
+%         myStop;
+        disp(exp_inform.i_trl);
+        
         exp_inform.FeatSet{exp_inform.i_trl} = cq.featset.data;
-
+        disp(exp_inform.FeatSet);
+        
         if isempty(exp_inform.FeatSet{exp_inform.i_trl})
             keyboard;
         end
@@ -63,7 +72,9 @@ if(GUI.id_start_fe==1)
         GUI.id_start_fe = 0;
 
         % go next facial expression
+%         myStop;
         exp_inform.i_trl = exp_inform.i_trl +1;
+        disp(exp_inform.i_trl);
         
     end
 end
@@ -71,144 +82,50 @@ end
 
 %+++++++++++++++++++++++++++test mode+++++++++++++++++++++++++++++++++++++%
 if GUI.handles.radiobutton_test.Value
-%     % classification of each emotion
-%     [temp_output,temp_score] = predict(exp_inform.model_from_train{i_cf},...
-%         temp_feat(exp_inform.idx_ch_FE2classfy{i_cf}));
-%     cq.output_emotion
     
-    
-    % classification of each faical unit
-    for i_cf = 1 : exp_inform.n_cf
-        [temp_output,temp_score] = predict(exp_inform.model_FE{i_cf},...
-        temp_feat(exp_inform.idx_ch_FE2classfy{i_cf}));
-    
-        % add outputs
-        cq.output_test{i_cf}.addArray(temp_output);
-        cq.output_score{i_cf}.addArray(temp_score);
-        
-    end
-   
-
-    % datasize
-    if cq.output_test{1}.datasize == cq.output_test{1}.length
-        
-        
-        % majority voting
-        output_test = cell(exp_inform.n_cf,1);
-        output_mv = NaN(1,exp_inform.n_cf);
-        ouput_score = NaN(1,exp_inform.n_cf);
-        for i_cf = 1 : exp_inform.n_cf 
-            % get outputs
-            output_test{i_cf} = cq.output_test{i_cf}.getLastN(cq.output_test{i_cf}.length);
-        
-            temp_pd = cq.output_score{i_cf}.getLastN(cq.output_score{i_cf}.length);
-            
-            temp_output_score_avg = mean(temp_pd,1);
-            [ouput_score(i_cf), tmp_idx] = max(temp_output_score_avg);
-            output_mv(i_cf) = exp_inform.idx_FE2classfy{i_cf}(tmp_idx);
-        end
-        
-         %-------- emg onset using majority voting
-         temp_emg_onset = cq.emg_onset4mv.getLastN(cq.emg_onset4mv.length);
-         id_emg_onset_chan = NaN(1,exp_inform.n_bip_ch);
-         for i_ch = 1 : exp_inform.n_bip_ch
-             [~,tmp_idx] = max(countmember(exp_inform.idx_emg_onest,...
-                 temp_emg_onset(:,i_ch)));
-             id_emg_onset_chan(i_ch) = exp_inform.idx_emg_onest(tmp_idx);
-         end
-         id_emg_onset_final = NaN(1,exp_inform.n_cf);
-         id_emg_onset_final(1) = ...
-             any([id_emg_onset_chan(2),id_emg_onset_chan(3)]);
-         id_emg_onset_final(2) = ...
-             any([id_emg_onset_chan(1),id_emg_onset_chan(4)]);
-        %-------------------
-            disp(id_emg_onset_final);
-            disp(output_mv);
-         
-            %-----------EYE-BROW EMG: ON LIP-BROW EMG: ON-------------%
-            if id_emg_onset_final(1) == 1 && id_emg_onset_final(2) == 1
-                if ouput_score(1) < ouput_score(2)
-
-                % get possible eye brow expressions based on lip shapes
-                possible_eyebrows = ...
-                    natural_eye_brow_exp_selctor(output_mv(2));
-
-                % set eye brow within possible eye brow expression
-                output_mv(1) = get_output_within_possible_outcomes(...
-                    possible_eyebrows,output_test{1});
-                else
-
-                % get possible lip expressions based on eye-brow
-                possible_lips = ...
-                    natural_lip_exp_selctor(output_mv(1));
-
-                % set lip expression within possible lip expressions
-                output_mv(2) = get_output_within_possible_outcomes(...
-                    possible_lips,output_test{2});
-                end
-            %---------------------------------------------------------%
-
-            %-----------EYE-BROW EMG: ON LIP-BROW EMG: OFF------------%
-            elseif id_emg_onset_final(1) == 1 && id_emg_onset_final(2) == 0
-                if output_mv(1) == 1 || output_mv(1) == 11
-                    % get possible lip expressions based on eye-brow
-                    possible_lips = ...
-                    natural_lip_exp_selctor(output_mv(1));
-
-                    % set lip expression within possible lip expressions
-                    output_mv(2) = get_output_within_possible_outcomes(...
-                    possible_lips,output_test{2});
-                else
-                    output_mv(2) = 9;
-                end
-            %---------------------------------------------------------%
-
-            %-----------EYE-BROW EMG: OFF LIP-BROW EMG: ON------------%
-            elseif id_emg_onset_final(1) == 0 && id_emg_onset_final(2) == 1
-%                     output_mv(1) = 9;
-                % get possible eye brow expressions based on lip shapes
-                possible_eyebrows = ...
-                    natural_eye_brow_exp_selctor(output_mv(2));
-
-                % set eye brow within possible eye brow expression
-                output_mv(1) = get_output_within_possible_outcomes(...
-                    possible_eyebrows,output_test{1});
-            %---------------------------------------------------------%
-
-            %-----------EYE-BROW EMG: OFF LIP-BROW EMG: OFF-----------%
-            elseif id_emg_onset_final(1) == 0 && id_emg_onset(2) == 0
-                output_mv(1) = 9;
-                output_mv(2) = 9;
-            end
-            %---------------------------------------------------------%
-        
-        
-        
-        % presentation of classfied facial expression
-        temp_output_eye = exp_inform.name_gesture_clfr{1}{output_mv(1)};
-        temp_output_lip = exp_inform.name_gesture_clfr{2}{output_mv(2)};
-        GUI.handles.edit_classification.String = ...
-            sprintf('EYE-BROW: %s LIP: %s',...
-            temp_output_eye,temp_output_lip);
-            
-        
-        % show avartar
-        plot_avartar(GUI.handles.axes_avartar,temp_output_eye,...
-            'neutral',temp_output_lip);
-
-
-        %------do serial communication to control avartar-------------%
-        %             fprintf(exp_inform.PC_serial, num2str(fp));
-        %-------------------------------------------------------------%
+    % classification of each emotion
+    y_corrected = conditonal_voting_online(temp_feat,...
+        exp_inform.model.FE_emotion,exp_inform.template_c3);
+%     y_corrected = 9;
+%     disp(y_corrected);
+    if isnan(y_corrected)
+        return;
     end
 
+    GUI.handles.edit_classification.String = ...
+        sprintf('Emotion: %s',...
+        exp_inform.name_FE{y_corrected});
+
+    %------------------presentation of avartar----------------------%
+    temp_output_eye = exp_inform.name_gesture_clfr{1}{y_corrected};
+    temp_output_lip = exp_inform.name_gesture_clfr{2}{y_corrected};
+%     myStop;
+%     plot_avartar(GUI.handles.axes_avartar,temp_output_eye,...
+%         'neutral',temp_output_lip);
+    fprintf('%s %s\n',temp_output_eye,temp_output_lip);
+%     drawnow;
+    %---------------------------------------------------------------%
+    
+%     myStop;
+    
+% exp_inform.udp
+    %------do UDP control  to control avartar-------------%
+    fprintf(exp_inform.udp,temp_output_eye);
+    fprintf(exp_inform.udp,temp_output_lip);
+    %-------------------------------------------------------------%
+%     disp(exp_inform.name_FE{y_corrected});
+
+    %------do serial communication to control avartar-------------%
+    %             fprintf(exp_inform.PC_serial, num2str(fp));
+    %-------------------------------------------------------------%
 end
 %+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++%
 
-%==================WHEN EXPERIMENT HAS BEEN FINISHED======================%
+%==================WHEN EXPERIMENT IS FINISHED======================%
 % you should not confuse the trial has to be more 1,becasue the last trial
 % should be proccessed
-if exp_inform.i_trl == exp_inform.n_fe+1 % 11번째까지 다마치고 12번쨰로 바뀔 때가 끝임
+ % 11번째까지 다마치고 12번째로 바뀔 때가 끝임
+if (exp_inform.i_trl == 12)
     myStop();
     find_feat_and_train(); % get LDA mode save it with DB
 end
@@ -246,6 +163,7 @@ function c=a2c(a,p,cp)
 %                             CVUT FEL K331
 %                           Last change 11-02-99
 
+c = NaN(cp,1);
 for n=1:cp
     sum=0;
     if n<p+1

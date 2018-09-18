@@ -33,7 +33,7 @@ for i_fe=1:exp_inform.n_fe
     GUI.h_image(i_fe).Visible='off';
 end
 GUI.h_image(GUI.idx_defalt_img).Visible = 'on';
-
+exp_inform.saving_feat=0; 
 catch ex
 struct2cell(ex.stack)'
 myStop;

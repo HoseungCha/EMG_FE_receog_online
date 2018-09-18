@@ -73,16 +73,16 @@ guidata(hObject, handles);
 %-------------set paths in compliance with Cha's code structure-----------%
 
 % path of research, which contains toolbox
-path.research = fileparts(fileparts(fileparts(fullfile(cd))));
+% path.research = fileparts(fileparts(fileparts(fullfile(cd))));
 
 % path of code, which 
-path.code = fileparts(fullfile(cd));
+path.code = cd;
 
 %-------------------------------------------------------------------------%
 
 % add path
-addpath(fullfile(cd,'functions'));
-addpath(genpath(fullfile(path.research,'_toolbox')));
+addpath(genpath(fullfile(cd,'functions')));
+% addpath(genpath(fullfile(path.research,'_toolbox')));
 GUI_mode_presentation(handles); % GUI presentation
 GUI.button_init = 0;
 
@@ -150,9 +150,9 @@ if GUI.button_init == 0
 end
 
 % online 모드로 작동할 경우 use_biosemix 켜줌
-if GUI.prog_mode == 1
-    GUI.use_biosmix = 1;
-end
+% if GUI.prog_mode == 1
+%     GUI.use_biosmix = 1;
+% end
 
 %-------------------------------train mode--------------------------------%
 if handles.radiobutton_train.Value
@@ -164,7 +164,7 @@ if handles.radiobutton_train.Value
     timer_obj.inst_rest.UserData = tic;
     
     % 표정 인스트럭션 GUI 시작
-    if ~strfind(GUI.prog_mode,'file')
+    if isempty(strfind(GUI.prog_mode,'file'))
         start(timer_obj.inst_make_fe); 
         start(timer_obj.inst_rest);
     end

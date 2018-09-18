@@ -55,6 +55,7 @@ switch GUI.prog_mode
         File.curr_pos = File.curr_pos+ exp_inform.sf_of_timer;
     case 'online_biosemi'
         seg = biosemi_signal_recieve(exp_inform.n_ch_rawdata);
+        GUI.id_start_fe = 1;
 
     case 'online_biosemi_eprime'
         seg = biosemi_signal_recieve(exp_inform.n_ch_rawdata);
@@ -123,7 +124,7 @@ cq.emg_procc.addArray(segs); % 그림 출력 데이터
 Process_EMG(); 
 
 % buffer for emg onset
-cq.emg_onset.addArray(repmat(id_emg_onset,n_seg,1));
+% cq.emg_onset.addArray(repmat(id_emg_onset,n_seg,1));
 
 
 

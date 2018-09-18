@@ -1,12 +1,14 @@
 function segment = biosemi_signal_recieve(ch)
 % biosemi online input
 %% BIOSEMIX 이용 코드
+% try
 try
+%     myStop;
     segment = biosemix([ch+1 0]);
 catch me
     if strfind(me.message,'BIOSEMI device')
         clear biosemix;
-        segment = biosemix([ch+ 0]);
+        segment = biosemix([ch+1 0]);
     else
         rethrow(me);
     end
@@ -14,8 +16,8 @@ end
 % myStop;
 segment = single(segment(2:end,:)) * 0.262 / 2^31;
 % adbox ch1 slot was broken
-segment(1,:) = [];
-segment = 10^6.*double(segment');
+% segment(1,:) = [];
+segment = 10^6.*double(segment(2:end,:)');
 % %% TCP
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %    Copyright (C) 2015 Biosemi(Gerben Snoek <info@biosemi.com>) <www.biosemi.com> 
@@ -115,6 +117,9 @@ segment = 10^6.*double(segment');
 
 
 
-
+% catch ex
+%     myStop;
+%     keyboard
+% end
 
 end

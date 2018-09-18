@@ -25,5 +25,9 @@ function myStop()
         end
         exp_inform = rmfield(exp_inform,'PC_serial'); 
     end
-    
+    if isfield(exp_inform,'udp')
+        fclose(exp_inform.udp);
+        delete(exp_inform.udp);
+        exp_inform = rmfield(exp_inform,'udp');
+    end
 end
