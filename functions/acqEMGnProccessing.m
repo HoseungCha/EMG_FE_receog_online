@@ -6,7 +6,7 @@
 % contact: hoseungcha@gmail.com
 % 2017.09.20 main timer function 데이터를 실시간으로 queue로 넣는 코드.
 %--------------------------------------------------------------------------
-function data_acq_n_preprocessing(  )
+function acqEMGnProccessing(  )
 global GUI;
 global exp_inform;
 global p;
