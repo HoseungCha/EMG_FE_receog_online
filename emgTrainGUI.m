@@ -433,7 +433,7 @@ dataType = handles.popupmenu_dataType.String{handles.popupmenu_dataType.Value};
 
 if  strcmp(modeType,'OneTouch')
     if strcmp(dataType,'bdf')
-        [mdl,analysisParameters,pathSave] = doOneTouchAnalysisBDF(path);       
+        doOneTouchAnalysisBDF(path);       
     elseif strcmp(dataType,'mat')
         disp('do offline anlaysis of mat file');
     end

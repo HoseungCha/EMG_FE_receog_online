@@ -58,7 +58,7 @@ nFE = length(labelNames);% Number of facial expression
 analysisParameters.nFE = nFE;
 % read file path of subjects
 [~,name,ext] = fileparts(pathDB);
-if strcmp(ext,'.bdf') % 파일 자체를 선택할 경우
+if strcmp(ext,'.bdf') || strcmp(ext,'.mat') % 파일 자체를 선택할 경우
     pathSubject = {pathDB};
     nameSubject = {name};
 else
@@ -106,7 +106,7 @@ if idReturnPath % just return path (you can use it when finished obataining DB)
 end
 
 % read subjects folder
-if strcmp(ext,'.bdf') % 파일 자체를 선택할 경우
+if strcmp(ext,'.bdf')||strcmp(ext,'.mat') % 파일 자체를 선택할 경우
     path_file{1} = pathDB;
 else
     if isempty(SubDirectoryBDF)

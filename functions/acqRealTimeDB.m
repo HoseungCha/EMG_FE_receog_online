@@ -9,6 +9,10 @@ global winBackup% train data
 global winCount % 표정 짓는 시간 GUI에 뿌릴 때 사용
 global trgGetSignal % 외부 표정짓는 시점 통신에 사용
 
+%test
+global CovMeanCali;
+global mdl
+global EditHandle;
 
 try
 % define defaults
@@ -17,7 +21,8 @@ opt = struct(...
     'analysisParameters',[],...
     'rawDB',[],...
     'winSize',0.128,...
-    'BackUpMinutes', 30);
+    'BackUpMinutes', 30,...
+    'idDoPredict',false);
 
 % set argument
 opt = chaSetArgument(opt,varargin);
@@ -52,19 +57,27 @@ if ~isempty(rawDB)
         winLengthBDF = floor(analysisParameters.sampRate*winSize);
     end
     % 임시코드 (온라인 데이터 전극 붙이기 귀찮아서 bdf파일로 실시간 분석
+    if length(rawDB.data)<rawPos+winLengthBDF
+        disp('you just read full offline files');
+        myStop;
+    end
     d = double(rawDB.data(:,rawPos:rawPos+winLengthBDF-1)');
 end
 % 들어온 data 갯수 파악
 dataLength = size(d,1);
 
 % raw data 백업
-rawBackup(rawPos:rawPos+winLengthBDF-1,1:10) = d;
-rawBackup(rawPos:rawPos+winLengthBDF-1,end) = trgGetSignal;
-% disp(rawPos);
+rawBackup(rawPos:rawPos+dataLength-1,1:10) = d;
+rawBackup(rawPos:rawPos+dataLength-1,end) = trgGetSignal;
+
+% 채널 8개만 사용
+d(:,analysisParameters.idx_rej) = []; % set EMG pair
+
+
 
 if trgGetSignal %동기화 들어올 경우
 % Do analysis Code here
-d(:,analysisParameters.idx_rej) = []; % set EMG pair
+
 
 % filtering
 out = filterOnline(d,analysisParameters);
@@ -81,15 +94,21 @@ if winCount == analysisParameters.nSeg
 end    
 winCount = winCount +1;
 end
+rawPos = rawPos + dataLength;
 
+
+if idDoPredict
 %---- test
 % covariance
-% CovTest = covariances(out','shcovft');
-% STest= Tangent_space(CovTest,CAdap)';
-% yPd = predLDA(mdlNew,STest);
+% STest = riemanFeatureExtraction(CovCali,winSegTest);
+% myStop;
+CovTest = covariances(d','shcovft');
+STest= Tangent_space(CovTest,CovMeanCali{1})';
+yPd = predLDA(mdl{1},STest);
+% myStop;
+EditHandle.String=analysisParameters.labelNames{yPd};
+end
 
-
-rawPos = rawPos + dataLength;
 % disp(rawPos);
 % winCount = winCount + 1;
 % myStop;
