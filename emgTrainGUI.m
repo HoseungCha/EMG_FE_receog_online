@@ -84,7 +84,7 @@ name_FE = {'ANGRY';'CLENCH';'CONTEMPT_LEFT';...
 for i=1:nFE
     pathImage = fullfile(cd,'rsc','img_fe_11','train',...
         [name_FE{i},'.jpg']);
-    temp_img= imread(pathImage);
+    temp_img= imread(pathImage); % need a toolbox, not working in this environment
     eval(sprintf('h_image(i) = imshow(temp_img,''Parent'',handles.axes%d);',i));
 end
 idxFE =1:11;
